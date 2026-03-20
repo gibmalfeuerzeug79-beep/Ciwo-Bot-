@@ -114,35 +114,46 @@ async def on_member_ban(guild, user):
 
 @bot.event
 async def on_member_update(before, after):
-    if before.communication_disabled_until != after.communication_disabled_until:
-        guild = after.guild
+    # nur wenn Timeout gesetzt wurde (nicht entfernt!)
+    if (
+        before.communication_disabled_until == after.communication_disabled_until
+        or after.communication_disabled_until is None
+    ):
+        return
 
-        await asyncio.sleep(1)  # 🔥 WICHTIG!
+    guild = after.guild
 
-        async for entry in guild.audit_logs(limit=5, action=discord.AuditLogAction.member_update):
-            
-            # 🔥 check ob der Eintrag zu diesem User gehört
-            if entry.target.id != after.id:
-                continue
+    await asyncio.sleep(1.5)  # bisschen höher für Sicherheit
 
-            mod = entry.user
+    async for entry in guild.audit_logs(limit=10, action=discord.AuditLogAction.member_update):
 
-            if mod.id in WHITELIST:
-                return
+        # 🔥 MUSS übereinstimmen
+        if entry.target.id != after.id:
+            continue
 
-            now = datetime.utcnow()
-            mod_actions.setdefault(mod.id, []).append(now)
-            clean_old_entries(mod_actions)
+        # 🔥 extra check: war es wirklich ein timeout?
+        if not entry.after.communication_disabled_until:
+            continue
 
-            print(f"{mod} hat Timeout gemacht ({len(mod_actions[mod.id])})")
+        mod = entry.user
 
-            if len(mod_actions[mod.id]) >= 3:
-                try:
-                    await guild.ban(mod, reason="Timeout Spam")
-                except Exception as e:
-                    print(e)
+        if mod.id in WHITELIST:
+            return
 
-            break  # wichtig!
+        now = datetime.utcnow()
+        mod_actions.setdefault(mod.id, []).append(now)
+        clean_old_entries(mod_actions)
+
+        print(f"{mod} → Timeout #{len(mod_actions[mod.id])}")
+
+        if len(mod_actions[mod.id]) >= 3:
+            try:
+                await guild.ban(mod, reason="Timeout Spam")
+                print("🚨 MOD GEBANNT")
+            except Exception as e:
+                print(e)
+
+        break
 
 
 bot.run(os.getenv("TOKEN"))
