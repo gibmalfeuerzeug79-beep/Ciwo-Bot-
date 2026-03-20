@@ -116,18 +116,33 @@ async def on_member_ban(guild, user):
 async def on_member_update(before, after):
     if before.communication_disabled_until != after.communication_disabled_until:
         guild = after.guild
-        async for entry in guild.audit_logs(limit=1, action=discord.AuditLogAction.member_update):
+
+        await asyncio.sleep(1)  # 🔥 WICHTIG!
+
+        async for entry in guild.audit_logs(limit=5, action=discord.AuditLogAction.member_update):
+            
+            # 🔥 check ob der Eintrag zu diesem User gehört
+            if entry.target.id != after.id:
+                continue
+
             mod = entry.user
+
             if mod.id in WHITELIST:
                 return
+
             now = datetime.utcnow()
             mod_actions.setdefault(mod.id, []).append(now)
             clean_old_entries(mod_actions)
+
+            print(f"{mod} hat Timeout gemacht ({len(mod_actions[mod.id])})")
+
             if len(mod_actions[mod.id]) >= 3:
                 try:
                     await guild.ban(mod, reason="Timeout Spam")
-                except:
-                    pass
+                except Exception as e:
+                    print(e)
+
+            break  # wichtig!
 
 
 bot.run(os.getenv("TOKEN"))
