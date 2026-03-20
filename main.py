@@ -6,7 +6,10 @@ import asyncio
 from datetime import datetime, timedelta
 import re
 
-intents = discord.Intents.all()
+intents = discord.Intents.default()
+intents.members = True
+intents.message_content = True
+
 bot = commands.Bot(command_prefix="!", intents=intents)
 
 WHITELIST = [1469353569475100774,
@@ -114,25 +117,24 @@ async def on_member_ban(guild, user):
 
 @bot.event
 async def on_member_update(before, after):
-    # nur wenn Timeout gesetzt wurde (nicht entfernt!)
+    # nur wenn Timeout gesetzt wurde
     if (
-        before.communication_disabled_until == after.communication_disabled_until
-        or after.communication_disabled_until is None
+        before.timed_out_until == after.timed_out_until
+        or after.timed_out_until is None
     ):
         return
 
     guild = after.guild
 
-    await asyncio.sleep(1.5)  # bisschen höher für Sicherheit
+    await asyncio.sleep(1.5)
 
     async for entry in guild.audit_logs(limit=10, action=discord.AuditLogAction.member_update):
 
-        # 🔥 MUSS übereinstimmen
         if entry.target.id != after.id:
             continue
 
-        # 🔥 extra check: war es wirklich ein timeout?
-        if not entry.after.communication_disabled_until:
+        # check ob es wirklich ein timeout ist
+        if not entry.after.timed_out_until:
             continue
 
         mod = entry.user
