@@ -114,48 +114,45 @@ async def on_member_ban(guild, user):
                 await guild.ban(mod, reason="Ban Spam")
             except:
                 pass
-
 @bot.event
 async def on_member_update(before, after):
-    # nur wenn Timeout gesetzt wurde
-    if (
-        before.timed_out_until == after.timed_out_until
-        or after.timed_out_until is None
-    ):
-        return
-
-    guild = after.guild
-
-    await asyncio.sleep(1.5)
-
-    async for entry in guild.audit_logs(limit=10, action=discord.AuditLogAction.member_update):
-
-        if entry.target.id != after.id:
-            continue
-
-        # check ob es wirklich ein timeout ist
-        if not entry.after.timed_out_until:
-            continue
-
-        mod = entry.user
-
-        if mod.id in WHITELIST:
+    try:
+        if (
+            before.timed_out_until == after.timed_out_until
+            or after.timed_out_until is None
+        ):
             return
 
-        now = datetime.utcnow()
-        mod_actions.setdefault(mod.id, []).append(now)
-        clean_old_entries(mod_actions)
+        guild = after.guild
+        await asyncio.sleep(1.5)
 
-        print(f"{mod} → Timeout #{len(mod_actions[mod.id])}")
+        async for entry in guild.audit_logs(limit=10, action=discord.AuditLogAction.member_update):
 
-        if len(mod_actions[mod.id]) >= 3:
-            try:
+            if entry.target.id != after.id:
+                continue
+
+            if not entry.after.timed_out_until:
+                continue
+
+            mod = entry.user
+
+            if mod.id in WHITELIST:
+                return
+
+            now = datetime.utcnow()
+            mod_actions.setdefault(mod.id, []).append(now)
+            clean_old_entries(mod_actions)
+
+            print(f"{mod} → Timeout #{len(mod_actions[mod.id])}")
+
+            if len(mod_actions[mod.id]) >= 3:
                 await guild.ban(mod, reason="Timeout Spam")
                 print("🚨 MOD GEBANNT")
-            except Exception as e:
-                print(e)
 
-        break
+            break
+
+    except Exception as e:
+        print(f"ERROR in on_member_update: {e}")
 
 
 bot.run(os.getenv("TOKEN"))
