@@ -350,5 +350,4 @@ async def help(interaction: discord.Interaction):
 
 # bot start -------------------------------------------------------------------------------------
 
-load_dotenv()
 bot.run(os.getenv("TOKEN"))
