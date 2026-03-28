@@ -401,7 +401,7 @@ async def on_message(message):
         await message.channel.send(
             embed=error_embed(message.author, "duplicated from same user is not allowed!")
         )
-        return
+        
 
     # ✅ Richtige Zahl
     if user_number == current_number:
