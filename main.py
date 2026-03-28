@@ -349,16 +349,13 @@ last_user_id = None
 failures = {}  # user_id: fehler
 
 
-
-
 def error_embed(user, text):
     embed = discord.Embed(
-        title=" mistake",
+        title="mistake",
         description=f"{user.mention} {text}",
         color=0x000370
     )
     return embed
-
 
 
 def reset_embed(user):
@@ -366,6 +363,15 @@ def reset_embed(user):
         title="Counter Reset",
         description=f"{user.mention} Made 3 mistakes!\nThe counter has been reset to **1**.",
         color=0x000370
+    )
+    return embed
+
+
+def success_embed(number, user):
+    embed = discord.Embed(
+        title="Correct!",
+        description=f"{user.mention} counted **{number}**\nNext number: **{number + 1}**",
+        color=0x00ff00
     )
     return embed
 
@@ -378,6 +384,7 @@ async def on_message(message):
         return
 
     if message.channel.name != COUNT_CHANNEL_NAME:
+        await bot.process_commands(message)
         return
 
     user_id = message.author.id
@@ -388,22 +395,23 @@ async def on_message(message):
     except ValueError:
         return
 
+    # ❗ Nicht zweimal hintereinander
+    if last_user_id == user_id:
+        await message.add_reaction("❌")
+        await message.channel.send(
+            embed=error_embed(message.author, "duplicated from same user is not allowed!")
+        )
+        return
 
+    # ✅ Richtige Zahl
+    if user_number == current_number:
+        await message.add_reaction("✅")
+        await message.channel.send(embed=success_embed(current_number, message.author))
+        current_number += 1
+        last_user_id = user_id
+        return
 
-   if last_user_id == user_id:
-    await message.add_reaction("❌")
-    await message.channel.send(
-        embed=error_embed(message.author, "duplicated from same user is not allowed!")
-    )
-    return
-
-elif user_number == current_number:
-    await message.add_reaction("✅")
-    current_number += 1
-    last_user_id = user_id
-    return
-
-else:
+    # ❌ Falsche Zahl
     failures[user_id] = failures.get(user_id, 0) + 1
     remaining = 3 - failures[user_id]
 
@@ -421,7 +429,6 @@ else:
                 f"Incorrect number! **{remaining} attempts** remaining."
             )
         )
-
 
     await bot.process_commands(message)
 
