@@ -396,35 +396,31 @@ async def on_message(message):
         )
         return
 
-    # ✅ Richtige Zahl
-    if user_number == current_number:
-        await message.add_reaction("✅")
-        await message.channel.send(embed=success_embed(current_number))
-        current_number += 1
-        last_user_id = user_id
-        
+   if user_number == current_number:
+    await message.add_reaction("✅")
+    await message.channel.send(embed=success_embed(current_number))
+    current_number += 1
+    last_user_id = user_id
+    return  # <---- WICHTIG
 
-    # ❌ Falsche Zahl
-    failures[user_id] = failures.get(user_id, 0) + 1
-    remaining = 3 - failures[user_id]
+# ❌ Falsche Zahl
+failures[user_id] = failures.get(user_id, 0) + 1
+remaining = 3 - failures[user_id]
 
-    await message.add_reaction("❌")
+await message.add_reaction("❌")
 
-    if failures[user_id] >= 3:
-        await message.channel.send(embed=reset_embed(message.author))
-        current_number = 1
-        last_user_id = None
-        failures = {}
-    else:
-        await message.channel.send(
-            embed=error_embed(
-                message.author,
-                f"Incorrect number! **{remaining} attempts** remaining."
-            )
+if failures[user_id] >= 3:
+    await message.channel.send(embed=reset_embed(message.author))
+    current_number = 1
+    last_user_id = None
+    failures = {}
+else:
+    await message.channel.send(
+        embed=error_embed(
+            message.author,
+            f"Incorrect number! **{remaining} attempts** remaining."
         )
-
-    await bot.process_commands(message)
-
+    )
 
     
 
