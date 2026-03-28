@@ -348,9 +348,37 @@ current_number = 1
 last_user_id = None
 failures = {}  # user_id: fehler
 
+
 @bot.event
 async def on_ready():
     print(f"Bot ist online als {bot.user}")
+
+
+def error_embed(user, text):
+    embed = discord.Embed(
+        title="❌ Fehler",
+        description=f"{user.mention} {text}",
+        color=discord.Color.red()
+    )
+    return embed
+
+
+def success_embed(number):
+    embed = discord.Embed(
+        title="✅ Richtige Zahl!",
+        description=f"Aktuelle Zahl: **{number}**",
+        color=discord.Color.green()
+    )
+    return embed
+
+
+def reset_embed(user):
+    embed = discord.Embed(
+        title="💀 Counter Reset",
+        description=f"{user.mention} hat 3 Fehler gemacht!\nDer Counter wurde auf **1** zurückgesetzt.",
+        color=discord.Color.dark_red()
+    )
+    return embed
 
 
 @bot.event
@@ -365,51 +393,48 @@ async def on_message(message):
 
     user_id = message.author.id
 
-    
+    # Nur Zahlen erlauben
     try:
         user_number = int(message.content)
     except ValueError:
         return
 
-    
+    # ❗ Nicht zweimal hintereinander
     if last_user_id == user_id:
         await message.add_reaction("❌")
         await message.channel.send(
-            f"{message.author.mention} du darfst nicht zweimal hintereinander zählen!"
+            embed=error_embed(message.author, "du darfst nicht zweimal hintereinander zählen!")
         )
         return
 
-    
+    # ✅ Richtige Zahl
     if user_number == current_number:
         await message.add_reaction("✅")
+        await message.channel.send(embed=success_embed(current_number))
         current_number += 1
         last_user_id = user_id
-        return
+        
 
-
+    # ❌ Falsche Zahl
     failures[user_id] = failures.get(user_id, 0) + 1
     remaining = 3 - failures[user_id]
 
     await message.add_reaction("❌")
 
     if failures[user_id] >= 3:
-        await message.channel.send(
-            f"💀 {message.author.mention} hat 3 Fehler gemacht! Counter wird auf **1** zurückgesetzt."
-        )
+        await message.channel.send(embed=reset_embed(message.author))
         current_number = 1
         last_user_id = None
         failures = {}
     else:
         await message.channel.send(
-            f"{message.author.mention} falsche Zahl! ({remaining} Versuche übrig)"
+            embed=error_embed(
+                message.author,
+                f"falsche Zahl! Noch **{remaining} Versuche** übrig."
+            )
         )
 
     await bot.process_commands(message)
-
-
-
-
-
 
 
 
