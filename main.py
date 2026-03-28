@@ -1,7 +1,6 @@
 from asyncio import timeout_at
 from os.path import exists
 
-import app
 import discord
 import os
 import random
