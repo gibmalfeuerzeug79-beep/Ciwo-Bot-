@@ -2,11 +2,11 @@ import discord
 import os
 from discord.ext import commands
 from discord import app_commands
-from datetime import timedelta
-from dotenv import load_dotenv
-from datetime import datetime
+from datetime import datetime, timedelta
 from flask import Flask
 from threading import Thread
+
+TOKEN = os.getenv("TOKEN")
 
 app = Flask('')
 
@@ -23,7 +23,6 @@ def keep_alive():
     t.start()
 load_dotenv()
 
-TOKEN = os.getenv("TOKEN")
 
 
 intents = discord.Intents.default()
