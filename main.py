@@ -394,24 +394,20 @@ async def on_message(message):
         user_number = int(message.content)
     except ValueError:
         return
+        if last_user_id == user_id:
+    await message.add_reaction("❌")
+    await message.channel.send(
+        embed=error_embed(message.author, "duplicated from same user is not allowed!")
+    )
+    return
 
-    # ❗ Nicht zweimal hintereinander
-    if last_user_id == user_id:
-        await message.add_reaction("❌")
-        await message.channel.send(
-            embed=error_embed(message.author, "duplicated from same user is not allowed!")
-        )
-        
+elif user_number == current_number:
+    await message.add_reaction("✅")
+    current_number += 1
+    last_user_id = user_id
+    return
 
-    # ✅ Richtige Zahl
-    if user_number == current_number:
-        await message.add_reaction("✅")
-        await message.channel.send(embed=success_embed(current_number, message.author))
-        current_number += 1
-        last_user_id = user_id
-        return
-
-    # ❌ Falsche Zahl
+else:
     failures[user_id] = failures.get(user_id, 0) + 1
     remaining = 3 - failures[user_id]
 
@@ -429,6 +425,7 @@ async def on_message(message):
                 f"Incorrect number! **{remaining} attempts** remaining."
             )
         )
+
 
     await bot.process_commands(message)
 
