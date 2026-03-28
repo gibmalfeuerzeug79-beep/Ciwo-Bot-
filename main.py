@@ -339,7 +339,72 @@ async def help(interaction: discord.Interaction):
 
 
 
-# discord User ---------------------------------------------------------------------
+# counting ---------------------------------------------------------------------
+
+
+COUNT_CHANNEL_NAME = "🔢・counting"
+
+current_number = 1
+last_user_id = None
+failures = {}  # user_id: fehler
+
+@bot.event
+async def on_ready():
+    print(f"Bot ist online als {bot.user}")
+
+
+@bot.event
+async def on_message(message):
+    global current_number, last_user_id, failures
+
+    if message.author.bot:
+        return
+
+    if message.channel.name != COUNT_CHANNEL_NAME:
+        return
+
+    user_id = message.author.id
+
+    
+    try:
+        user_number = int(message.content)
+    except ValueError:
+        return
+
+    
+    if last_user_id == user_id:
+        await message.add_reaction("❌")
+        await message.channel.send(
+            f"{message.author.mention} du darfst nicht zweimal hintereinander zählen!"
+        )
+        return
+
+    
+    if user_number == current_number:
+        await message.add_reaction("✅")
+        current_number += 1
+        last_user_id = user_id
+        return
+
+
+    failures[user_id] = failures.get(user_id, 0) + 1
+    remaining = 3 - failures[user_id]
+
+    await message.add_reaction("❌")
+
+    if failures[user_id] >= 3:
+        await message.channel.send(
+            f"💀 {message.author.mention} hat 3 Fehler gemacht! Counter wird auf **1** zurückgesetzt."
+        )
+        current_number = 1
+        last_user_id = None
+        failures = {}
+    else:
+        await message.channel.send(
+            f"{message.author.mention} falsche Zahl! ({remaining} Versuche übrig)"
+        )
+
+    await bot.process_commands(message)
 
 
 
