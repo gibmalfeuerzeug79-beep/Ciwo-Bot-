@@ -356,27 +356,19 @@ async def on_ready():
 
 def error_embed(user, text):
     embed = discord.Embed(
-        title="❌ Fehler",
+        title="❌ mistake",
         description=f"{user.mention} {text}",
-        color=discord.Color.red()
+        color=0x000370
     )
     return embed
 
-
-def success_embed(number):
-    embed = discord.Embed(
-        title="✅ Richtige Zahl!",
-        description=f"Aktuelle Zahl: **{number}**",
-        color=discord.Color.green()
-    )
-    return embed
 
 
 def reset_embed(user):
     embed = discord.Embed(
-        title="💀 Counter Reset",
-        description=f"{user.mention} hat 3 Fehler gemacht!\nDer Counter wurde auf **1** zurückgesetzt.",
-        color=discord.Color.dark_red()
+        title="Counter Reset",
+        description=f"{user.mention} Made 3 mistakes!\nThe counter has been reset to **1**.",
+        color=0x000370
     )
     return embed
 
@@ -403,7 +395,7 @@ async def on_message(message):
     if last_user_id == user_id:
         await message.add_reaction("❌")
         await message.channel.send(
-            embed=error_embed(message.author, "du darfst nicht zweimal hintereinander zählen!")
+            embed=error_embed(message.author, "duplicated from same user is not allowed!")
         )
         return
 
@@ -430,11 +422,13 @@ async def on_message(message):
         await message.channel.send(
             embed=error_embed(
                 message.author,
-                f"falsche Zahl! Noch **{remaining} Versuche** übrig."
+                f"Incorrect number! **{remaining} attempts** remaining."
             )
         )
 
     await bot.process_commands(message)
+
+    await interaction.response.send_message(embed=embed)
 
 
 
