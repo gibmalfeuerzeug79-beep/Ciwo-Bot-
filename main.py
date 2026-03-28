@@ -259,14 +259,14 @@ async def invites(interaction: discord.Interaction):
         color=0x000370
     )
 
-    for invite in invites:
-        inviter = invite.inviter.mention if invite.inviter else "Unbekannt"
+   for invite in invites[:25]:
+    inviter = invite.inviter.mention if invite.inviter else "Unbekannt"
 
-        embed.add_field(
-            name=f"Code: {invite.code}",
-            value=f"Erstellt von: {inviter}\nUses: {invite.uses}",
-            inline=False
-        )
+    embed.add_field(
+        name=f"Code: {invite.code}",
+        value=f"Erstellt von: {inviter}\nUses: {invite.uses}",
+        inline=False
+    )
 
     await interaction.followup.send(embed=embed)
 
