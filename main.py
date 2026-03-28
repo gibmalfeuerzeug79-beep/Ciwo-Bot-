@@ -349,14 +349,14 @@ last_user_id = None
 failures = {}  # user_id: fehler
 
 
-@bot.event
-async def on_ready():
-    print(f"Bot ist online als {bot.user}")
 
+embed.set_image(
+        url="https://cdn.discordapp.com/attachments/1292435237653184554/1480994783458496562/pelangi.gif"
+    )
 
 def error_embed(user, text):
     embed = discord.Embed(
-        title="❌ mistake",
+        title=" mistake",
         description=f"{user.mention} {text}",
         color=0x000370
     )
@@ -429,6 +429,8 @@ async def on_message(message):
     await bot.process_commands(message)
 
     await interaction.response.send_message(embed=embed)
+    
+    embed.set_footer(text="Made by Yuqii")
 
 
 
