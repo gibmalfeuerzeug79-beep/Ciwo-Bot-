@@ -5,6 +5,7 @@ from discord import app_commands
 from datetime import datetime, timedelta
 from flask import Flask
 from threading import Thread
+from discord import Embed
 
 TOKEN = os.getenv("TOKEN")
 
