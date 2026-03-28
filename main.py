@@ -367,13 +367,6 @@ def reset_embed(user):
     return embed
 
 
-def success_embed(number, user):
-    embed = discord.Embed(
-        title="Correct!",
-        description=f"{user.mention} counted **{number}**\nNext number: **{number + 1}**",
-        color=0x00ff00
-    )
-    return embed
 
 
 @bot.event
