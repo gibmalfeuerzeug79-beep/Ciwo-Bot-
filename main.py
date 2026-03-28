@@ -1,158 +1,367 @@
-from email import message
-import os
+from asyncio import timeout_at
+from os.path import exists
+
+import app
 import discord
+import os
+import random
+import interaction
+import requests
 from discord.ext import commands
-import asyncio 
-from datetime import datetime, timedelta
-import re
+from discord import app_commands, Embed, member, role
+from datetime import timedelta
+
+from discord.types import embed
+from dotenv import load_dotenv
+from datetime import datetime
+
+from pandas.io.formats.format import return_docstring
+
+from flask import Flask
+from threading import Thread
+
+app = Flask('')
+
+@app.route('/')
+def home():
+    return "Bot läuft!"
+
+def run():
+    port = int(os.environ.get("PORT", 8080))
+    app.run(host='0.0.0.0', port=port)
+
+def keep_alive():
+    t = Thread(target=run)
+    t.start()
+load_dotenv()
+
+TOKEN = os.getenv("TOKEN")
+
 
 intents = discord.Intents.default()
-intents.members = True
 intents.message_content = True
 
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-WHITELIST = [1469353569475100774,
-             662596869221908480]
-
-# Tracking
-mention_tracker = {}
-mod_actions = {}
-
-TIME_WINDOW = timedelta(minutes=15)
-
-# 🔍 Invite Regex
-INVITE_REGEX = re.compile(r"(discord\.gg\/|discord\.com\/invite\/)")
-
-# 🧹 Cleanup
-def clean_old_entries(data_dict):
-    now = datetime.utcnow()
-    for user in list(data_dict.keys()):
-        data_dict[user] = [t for t in data_dict[user] if now - t < TIME_WINDOW]
-        if not data_dict[user]:
-            del data_dict[user]
-
 @bot.event
-async def on_webhooks_update(channel):
-    webhooks = await channel.webhooks()
-    for webhook in webhooks:
-        if webhook.user and webhook.user.id in WHITELIST:
-            continue
-        try:
-            await webhook.delete(reason="Anti-Webhook")
-        except:
-            pass
+async def on_ready():
+    synced = await bot.tree.sync()
+    print(f"{len(synced)} commands synced")
 
-@bot.event
-async def on_message(message):
-    if message.author.bot:
+def create_embed(title: object, description: object, user: object = None, color: object = discord.Color.blue()) -> Embed:
+    embed = discord.Embed(
+        title=title,
+        description=description,
+        color=color
+    )
+
+    embed.set_image(
+        url="https://cdn.discordapp.com/attachments/1292435237653184554/1480994783458496562/pelangi.gif"
+    )
+
+    embed.set_footer(text="Made By Yuqii")
+
+
+
+    if user:
+        embed.set_thumbnail(url=user.display_avatar.url)
+
+    embed.set_footer(text="Made By Yuqii")
+
+    return embed
+
+
+
+#Kick ---------------------------------------------------------------------
+
+
+
+@bot.tree.command(name="kick", description="Kick a user from Server")
+@app_commands.describe(member="User to kick", reason="reason")
+async def kick(interaction: discord.Interaction, member: discord.Member, reason: str = "No Reason"):
+
+    if not interaction.user.guild_permissions.kick_members:
+        await interaction.response.send_message("You dont have perms to do that.", ephemeral=True)
         return
 
-    if message.author.id in WHITELIST:
+    await member.kick(reason=reason)
+
+    await interaction.response.send_message(
+        f" {member.mention} was kicked.\nreason: {reason}"
+
+    )
+
+    now = datetime.now().strftime("%d.%m.%Y | %H:%M")
+
+
+# Ban ---------------------------------------------------
+
+@bot.tree.command(name="ban", description="Ban a user from Server")
+@app_commands.describe(member="User to kick", reason="reason")
+async def ban(interaction: discord.Interaction, member: discord.Member, reason: str = "No Reason"):
+
+    if not interaction.user.guild_permissions.ban_members:
+        await interaction.response.send_message("You dont have perms to do that.", ephemeral=True)
         return
 
-    now = datetime.utcnow()
+    await member.ban(reason=reason)
+#mit embed -----
 
-    if INVITE_REGEX.search(message.content):
-        try:
-            await message.delete()
-            await message.author.timeout(timedelta(minutes=5), reason="Discord Invite gepostet")
-            await message.channel.send(f"{message.author.mention} → Invite Links sind verboten!")
-        except:
-            pass
+    embed = create_embed(
+      title="User banned",
+      description=f"{member.mention} wurde gebannt.\nGrund: {reason}",
+      color=0x000370
+    )
+
+    embed.set_thumbnail(url=member.display_avatar.url)
+
+    await interaction.response.send_message(embed=embed)
+
+    now = datetime.now().strftime("%d.%m.%Y | %H:%M")
+
+#TIMEOUT ------------------------------------------------------------
+
+from datetime import timedelta
+
+@bot.tree.command(name="timeout", description="Timeoute the User")
+@app_commands.describe(member="Mitglied", minutes="Time in minutes", reason="Grund")
+async def timeout(interaction: discord.Interaction, member: discord.Member, minutes: int, reason: str = "Kein Grund angegeben"):
+
+    if not interaction.user.guild_permissions.moderate_members:
+        await interaction.response.send_message("you dont have perms to do that", ephemeral=True)
         return
 
-    if message.mentions:
-        user_id = message.author.id
-        mention_tracker.setdefault(user_id, []).append(now)
-        clean_old_entries(mention_tracker)
+    await interaction.response.defer()
 
-        if len(mention_tracker[user_id]) > 3:
-            try:
-                await message.author.timeout(timedelta(minutes=5), reason="Mention Spam")
-                await message.channel.send(f"{message.author.mention} → Timeout wegen Mention Spam")
-            except:
-                pass
+    duration = timedelta(minutes=minutes)
+
+    await member.timeout(duration, reason=reason)
+
+    embed = create_embed(
+        title="User got Timeout!",
+        description=f"{member.mention} wurde für **{minutes} Minuten** getimeoutet.\nGrund: {reason}",
+        color=0x000370
+    )
+    embed.set_thumbnail(url=member.display_avatar.url)
+
+    await interaction.followup.send(embed=embed)
+
+    now = datetime.now().strftime("%d.%m.%Y | %H:%M")
+
+    #timeout remove-------------------------------------------------------------------------------------
 
 
-    if "@everyone" in message.content or "@here" in message.content:
-        try:
-            await message.author.timeout(timedelta(minutes=3), reason="@everyone missbraucht")
-            await message.channel.send(f"{message.author.mention} → Timeout wegen @everyone")
-        except:
-            pass
-    await bot.process_commands(message)
+@bot.tree.command(name="untimeout", description="Untimeoute the User")
+@app_commands.describe(member="User", reason="reason")
+async def untimeout(interaction: discord.Interaction, member: discord.Member, reason: str = "No Reason"):
+    if not interaction.user.guild_permissions.moderate_members:
+        await interaction.response.send_message("you dont have perms to do that!", ephemeral=True)
+        return
 
-@bot.event
-async def on_member_remove(member):
-    guild = member.guild
-    async for entry in guild.audit_logs(limit=1, action=discord.AuditLogAction.kick):
-        user = entry.user
+    await interaction.response.defer()
 
-        if user.id in WHITELIST:
+    await member.timeout(None, reason=reason)
+
+    now = datetime.now().strftime("%d.%m.%Y | %H:%M")
+
+    embed = create_embed(
+        title="Timeout removed",
+        description=f"{member.mention} was untimeouted.\nReason: {reason}",
+        user=member,
+        color=0x000370
+    )
+
+    await interaction.followup.send(embed=embed)
+
+
+#avatar-------------------------------------------------------------------------------------
+
+
+@bot.tree.command(name="avatar", description="Show the User avatar")
+@app_commands.describe(member="User whose avatar should be displayed")
+async def avatar(interaction: discord.Interaction, member: discord.Member = None):
+    if member is None:
+        member = interaction.user
+
+    embed  = create_embed(
+        title = "Avatar von {user}".format(user=member),
+        description=f"[Avatar Herunterladen]({member.display_avatar.url})",
+        user=member,
+        color=0x000370
+
+    )
+
+    embed.set_image(url=member.display_avatar.url)
+
+
+    await interaction.response.send_message(embed=embed)
+
+#banner-------------------------------------------------------------------------------------
+
+@bot.tree.command(name="banner", description="Show the User banner")
+@app_commands.describe(member="User whose banner should be displayed")
+async def banner(interaction: discord.Interaction, member: discord.Member = None):
+
+
+    if member is None:
+        member = interaction.user
+
+    user = await bot.fetch_user(member.id)
+
+    if user.banner is None:
+        await interaction.response.send_message("This User has not Banner." ,ephemeral=True)
+        return
+
+
+
+    embed = create_embed(
+         title="Banner von {user}".format(user=user),
+         description=f"[Banner Herunterladen]({user.banner.url})",
+         user=member,
+         color=0x000370
+
+    )
+
+    embed.set_image(url=user.banner.url)
+
+    await interaction.response.send_message(embed=embed)
+
+
+# clear ----------------------------------------------------------------------------------
+
+@bot.tree.command(name="clear", description="Clear number of messages")
+@app_commands.describe(amount="User whose messages should be cleared")
+async def clear(interaction: discord.Interaction, amount: int):
+
+        if not interaction.user.guild_permissions.manage_messages:
+            await interaction.response.send_message("Du dont have Permissions to do that!", ephemeral=True)
             return
-        now = datetime.utcnow()
-        mod_actions.setdefault(user.id, []).append(now)
-        clean_old_entries(mod_actions)
-        if len(mod_actions[user.id]) >= 3:
-            try:
-                await guild.ban(user, reason="Kick Spam")
-            except:
-                pass
-@bot.event
-async def on_member_ban(guild, user):
-    async for entry in guild.audit_logs(limit=1, action=discord.AuditLogAction.ban):
-        mod = entry.user
 
-        if mod.id in WHITELIST:
-            return
-        now = datetime.utcnow()
-        mod_actions.setdefault(mod.id, []).append(now)
-        clean_old_entries(mod_actions)
-        if len(mod_actions[mod.id]) >= 3:
-            try:
-                await guild.ban(mod, reason="Ban Spam")
-            except:
-                pass
-@bot.event
-async def on_member_update(before, after):
-    try:
-        if (
-            before.timed_out_until == after.timed_out_until
-            or after.timed_out_until is None
-        ):
-            return
+        await interaction.response.defer()
 
-        guild = after.guild
-        await asyncio.sleep(1.5)
+        deleted = await interaction.channel.purge(limit=amount)
 
-        async for entry in guild.audit_logs(limit=10, action=discord.AuditLogAction.member_update):
+        embed = create_embed(
+            title="Messages cleared",
+            description=f"{len(deleted)} Messages were deleted.",
+            user=interaction.user,
+            color=0x000370
+        )
 
-            if entry.target.id != after.id:
-                continue
-
-            if not entry.after.timed_out_until:
-                continue
-
-            mod = entry.user
-
-            if mod.id in WHITELIST:
-                return
-
-            now = datetime.utcnow()
-            mod_actions.setdefault(mod.id, []).append(now)
-            clean_old_entries(mod_actions)
-
-            print(f"{mod} → Timeout #{len(mod_actions[mod.id])}")
-
-            if len(mod_actions[mod.id]) >= 3:
-                await guild.ban(mod, reason="Timeout Spam")
-                print("🚨 MOD GEBANNT")
-
-            break
-
-    except Exception as e:
-        print(f"ERROR in on_member_update: {e}")
+        await interaction.followup.send(embed=embed, ephemeral=True)
 
 
+#invite look up-----------------------------------------------------------------------------
+
+
+@bot.tree.command(name="invites", description="Zeigt alle Server Invites")
+async def invites(interaction: discord.Interaction):
+
+    await interaction.response.defer()
+
+    invites = await interaction.guild.invites()
+
+    if not invites:
+        await interaction.followup.send("Keine Invites gefunden.")
+        return
+
+    embed = create_embed(
+        title="Server Invite Übersicht",
+        description="Alle aktiven Server Einladungen",
+        color=0x000370
+    )
+
+    for invite in invites:
+        inviter = invite.inviter.mention if invite.inviter else "Unbekannt"
+
+        embed.add_field(
+            name=f"Code: {invite.code}",
+            value=f"Erstellt von: {inviter}\nUses: {invite.uses}",
+            inline=False
+        )
+
+    await interaction.followup.send(embed=embed)
+
+
+
+
+#help funktion-------------------------------------------------------------------------------------
+
+
+@bot.tree.command(name="help", description="Function by Yuqii")
+async def help(interaction: discord.Interaction):
+
+    embed = create_embed(
+        title="Yuqii Features",
+        description="Hier findest du die Slash Commands und Funktionen von Yuqii",
+        user=interaction.user,
+        color=0x000370
+    )
+
+    embed.add_field(
+        name="`/kick`",
+        value="Kicking a User spezific on Server",
+        inline=False
+    )
+
+    embed.add_field(
+        name="`/ban`",
+        value="Banning a User spezific on Server.",
+        inline=False
+    )
+
+    embed.add_field(
+        name="`/timeout`",
+        value="Timeoutet a User on Server.",
+        inline=False
+    )
+
+    embed.add_field(
+        name="`/untimeout`",
+        value="Remove the timeout from the User.",
+        inline=False
+    )
+
+    embed.add_field(
+        name="`/avatar`",
+        value="Show the User avatar.",
+        inline=False
+    )
+
+    embed.add_field(
+        name="`/banner`",
+        value="Show the User banner.",
+        inline=False
+    )
+
+    embed.add_field(
+        name="`/clear`",
+        value="Delete a spezific message from the Server.",
+        inline=False
+    )
+
+    embed.add_field(
+        name="`/invites`",
+        value="Look Up your Invite Stats",
+        inline=False
+    )
+
+
+    await interaction.response.send_message(embed=embed)
+
+
+
+# discord User ---------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+# bot start -------------------------------------------------------------------------------------
+
+load_dotenv()
 bot.run(os.getenv("TOKEN"))
