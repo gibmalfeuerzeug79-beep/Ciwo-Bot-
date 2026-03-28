@@ -1,21 +1,12 @@
-from asyncio import timeout_at
-from os.path import exists
-
 import discord
 import os
 import random
-import interaction
 import requests
 from discord.ext import commands
-from discord import app_commands, Embed, member, role
+from discord import app_commands
 from datetime import timedelta
-
-from discord.types import embed
 from dotenv import load_dotenv
 from datetime import datetime
-
-from pandas.io.formats.format import return_docstring
-
 from flask import Flask
 from threading import Thread
 
