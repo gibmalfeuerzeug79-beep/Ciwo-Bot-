@@ -350,9 +350,6 @@ failures = {}  # user_id: fehler
 
 
 
-embed.set_image(
-        url="https://cdn.discordapp.com/attachments/1292435237653184554/1480994783458496562/pelangi.gif"
-    )
 
 def error_embed(user, text):
     embed = discord.Embed(
@@ -428,9 +425,8 @@ async def on_message(message):
 
     await bot.process_commands(message)
 
-    await interaction.response.send_message(embed=embed)
+
     
-    embed.set_footer(text="Made by Yuqii")
 
 
 
