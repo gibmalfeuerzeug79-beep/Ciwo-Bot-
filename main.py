@@ -1,7 +1,5 @@
 import discord
 import os
-import random
-import requests
 from discord.ext import commands
 from discord import app_commands
 from datetime import timedelta
