@@ -113,7 +113,7 @@ from datetime import timedelta
 
 @bot.tree.command(name="timeout", description="Timeoute the User")
 @app_commands.describe(member="Mitglied", minutes="Time in minutes", reason="Grund")
-async def timeout(interaction: discord.Interaction, member: discord.Member, minutes: int, reason: str = "Kein Grund angegeben"):
+async def timeout(interaction: discord.Interaction, member: discord.Member, minutes: int, reason: str = "No Reason"):
 
     if not interaction.user.guild_permissions.moderate_members:
         await interaction.response.send_message("you dont have perms to do that", ephemeral=True)
@@ -127,7 +127,7 @@ async def timeout(interaction: discord.Interaction, member: discord.Member, minu
 
     embed = create_embed(
         title="User got Timeout!",
-        description=f"{member.mention} wurde für **{minutes} Minuten** getimeoutet.\nGrund: {reason}",
+        description=f"{member.mention} The timeout has been completed for **{minutes} minutes**.\n**Reason**: {reason}",
         color=0x000370
     )
     embed.set_thumbnail(url=member.display_avatar.url)
@@ -172,7 +172,7 @@ async def avatar(interaction: discord.Interaction, member: discord.Member = None
         member = interaction.user
 
     embed  = create_embed(
-        title = "Avatar von {user}".format(user=member),
+        title = "Avatar by {user}".format(user=member),
         description=f"[Avatar Herunterladen]({member.display_avatar.url})",
         user=member,
         color=0x000370
@@ -222,7 +222,7 @@ async def banner(interaction: discord.Interaction, member: discord.Member = None
 async def clear(interaction: discord.Interaction, amount: int):
 
         if not interaction.user.guild_permissions.manage_messages:
-            await interaction.response.send_message("Du dont have Permissions to do that!", ephemeral=True)
+            await interaction.response.send_message("you dont have Permissions to do that!", ephemeral=True)
             return
 
         await interaction.response.defer()
@@ -242,7 +242,7 @@ async def clear(interaction: discord.Interaction, amount: int):
 #invite look up-----------------------------------------------------------------------------
 
 
-@bot.tree.command(name="invites", description="Zeigt alle Server Invites")
+@bot.tree.command(name="invites", description="Shows all Server Invites")
 async def invites(interaction: discord.Interaction):
 
     await interaction.response.defer()
@@ -250,12 +250,12 @@ async def invites(interaction: discord.Interaction):
     invites = await interaction.guild.invites()
 
     if not invites:
-        await interaction.followup.send("Keine Invites gefunden.")
+        await interaction.followup.send("No Invites found.")
         return
 
     embed = create_embed(
-        title="Server Invite Übersicht",
-        description="Alle aktiven Server Einladungen",
+        title="Server Invite Overview",
+        description="All Active Server Invites",
         color=0x000370
     )
 
@@ -281,7 +281,7 @@ async def help(interaction: discord.Interaction):
 
     embed = create_embed(
         title="Yuqii Features",
-        description="Hier findest du die Slash Commands und Funktionen von Yuqii",
+        description="Here you will find the slash commands and functions of Yuqii.",
         user=interaction.user,
         color=0x000370
     )
