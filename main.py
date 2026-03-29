@@ -439,32 +439,31 @@ async def on_message(message):
 # Auto Role Tag Yuqii -------------------------------------------------------------------------------------------
 
 
-SERVER_TAG = "YUQI"      # Dein Server Tag
-ROLE_NAME = "Aura"   # Rolle die man bekommt
+SERVER_TAG = "YUQI"
+ROLE_NAME = "Aura"
 
 
 @bot.event
 async def on_member_update(before, after):
-    # Prüfen ob Name/Nickname geändert wurde
-    if before.display_name == after.display_name:
-        return
-
     role = discord.utils.get(after.guild.roles, name=ROLE_NAME)
     if role is None:
         return
 
-    # Hat der User den Tag?
-    if SERVER_TAG.lower() in after.display_name.lower():
+    before_name = before.nick or before.name
+    after_name = after.nick or after.name
+
+    if before_name == after_name:
+        return
+
+    if SERVER_TAG.lower() in after_name.lower():
         if role not in after.roles:
             await after.add_roles(role)
-            print(f"Role added to {after.display_name}")
+            print("Role added")
 
-    # Hat der User den Tag entfernt?
     else:
         if role in after.roles:
             await after.remove_roles(role)
-            print(f"Role removed from {after.display_name}")
-
+            print("Role removed")
     
 
 
