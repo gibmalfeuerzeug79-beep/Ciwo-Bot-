@@ -439,41 +439,7 @@ async def on_message(message):
 # Auto Role Tag Yuqii -------------------------------------------------------------------------------------------
 
 
-SERVER_TAG = "YUQI"
-ROLE_NAME = "Aura"
 
-
-
-@bot.event
-async def on_ready():
-    print(f"Logged in as {bot.user}")
-    tag_check.start()
-
-
-@tasks.loop(seconds=30)
-async def tag_check():
-    for guild in bot.guilds:
-        role = discord.utils.get(guild.roles, name=ROLE_NAME)
-        if role is None:
-            continue
-
-        for member in guild.members:
-            name = (member.nick or member.name)
-
-            if SERVER_TAG.lower() in name.lower():
-                if role not in member.roles:
-                    try:
-                        await member.add_roles(role)
-                        print(f"Role added to {name}")
-                    except:
-                        pass
-            else:
-                if role in member.roles:
-                    try:
-                        await member.remove_roles(role)
-                        print(f"Role removed from {name}")
-                    except:
-                        pass
     
 
 
