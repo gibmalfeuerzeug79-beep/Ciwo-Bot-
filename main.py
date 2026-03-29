@@ -346,7 +346,7 @@ COUNT_CHANNEL_NAME = "🔢・counting"
 
 current_number = 1
 last_user_id = None
-failures = {}  # user_id: fehler
+failures = {}  
 
 
 def error_embed(user, text):
@@ -389,13 +389,13 @@ async def on_message(message):
 
     user_id = message.author.id
 
-    # Nur Zahlen erlauben
+    
     try:
         user_number = int(message.content)
     except ValueError:
         return
 
-    # ❗ Nicht zweimal hintereinander
+    
     if last_user_id == user_id:
         await message.add_reaction("❌")
         await message.channel.send(
@@ -403,7 +403,7 @@ async def on_message(message):
         )
         return
 
-    # ✅ Richtige Zahl
+    
     if user_number == current_number:
         await message.add_reaction("✅")
         await message.channel.send(embed=success_embed(current_number, message.author))
@@ -411,7 +411,7 @@ async def on_message(message):
         last_user_id = user_id
         return
 
-    # ❌ Falsche Zahl
+    
     failures[user_id] = failures.get(user_id, 0) + 1
     remaining = 3 - failures[user_id]
 
@@ -431,6 +431,37 @@ async def on_message(message):
         )
 
     await bot.process_commands(message)
+
+
+
+# Auto Role Tag Yuqii -------------------------------------------------------------------------------------------
+
+
+SERVER_TAG = "YUQI"      # Dein Server Tag
+ROLE_NAME = "Aura"   # Rolle die man bekommt
+
+
+@bot.event
+async def on_member_update(before, after):
+    # Prüfen ob Name/Nickname geändert wurde
+    if before.display_name == after.display_name:
+        return
+
+    role = discord.utils.get(after.guild.roles, name=ROLE_NAME)
+    if role is None:
+        return
+
+    # Hat der User den Tag?
+    if SERVER_TAG.lower() in after.display_name.lower():
+        if role not in after.roles:
+            await after.add_roles(role)
+            print(f"Role added to {after.display_name}")
+
+    # Hat der User den Tag entfernt?
+    else:
+        if role in after.roles:
+            await after.remove_roles(role)
+            print(f"Role removed from {after.display_name}")
 
     
 
