@@ -1,6 +1,6 @@
 import discord
 import os
-from discord.ext import commands
+from discord.ext import commands, tasks
 from discord import app_commands
 from datetime import datetime, timedelta
 from flask import Flask
@@ -443,27 +443,43 @@ SERVER_TAG = "YUQI"
 ROLE_NAME = "Aura"
 
 
+intents = discord.Intents.default()
+intents.members = True
+intents.message_content = True
+
+bot = commands.Bot(command_prefix="!", intents=intents)
+
+
 @bot.event
-async def on_member_update(before, after):
-    role = discord.utils.get(after.guild.roles, name=ROLE_NAME)
-    if role is None:
-        return
+async def on_ready():
+    print(f"Logged in as {bot.user}")
+    tag_check.start()
 
-    before_name = before.nick or before.name
-    after_name = after.nick or after.name
 
-    if before_name == after_name:
-        return
+@tasks.loop(seconds=30)
+async def tag_check():
+    for guild in bot.guilds:
+        role = discord.utils.get(guild.roles, name=ROLE_NAME)
+        if role is None:
+            continue
 
-    if SERVER_TAG.lower() in after_name.lower():
-        if role not in after.roles:
-            await after.add_roles(role)
-            print("Role added")
+        for member in guild.members:
+            name = (member.nick or member.name)
 
-    else:
-        if role in after.roles:
-            await after.remove_roles(role)
-            print("Role removed")
+            if SERVER_TAG.lower() in name.lower():
+                if role not in member.roles:
+                    try:
+                        await member.add_roles(role)
+                        print(f"Role added to {name}")
+                    except:
+                        pass
+            else:
+                if role in member.roles:
+                    try:
+                        await member.remove_roles(role)
+                        print(f"Role removed from {name}")
+                    except:
+                        pass
     
 
 
