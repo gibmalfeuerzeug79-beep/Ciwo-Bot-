@@ -344,7 +344,7 @@ async def help(interaction: discord.Interaction):
 # counting ---------------------------------------------------------------------
 
 
-COUNT_CHANNEL_NAME = "🔢・counting"
+COUNT_CHANNEL_NAME = "🔢・𝖢ounting"
 
 current_number = 1
 last_user_id = None
